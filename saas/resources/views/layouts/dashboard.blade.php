@@ -92,6 +92,9 @@
                         <a href="{{ route('dashboard.stripe-accounts.index') }}">Stripe accounts</a>
                     @endif
                     <a href="{{ route('dashboard.orders.index') }}">Transactions</a>
+                    @if (auth()->user()->hasPermission('users.view'))
+                        <a href="{{ route('dashboard.users.index') }}">Users</a>
+                    @endif
                 </nav>
             </div>
             <div class="right">

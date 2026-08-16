@@ -5,6 +5,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\OrderController;
 use App\Http\Controllers\Dashboard\StripeAccountController;
+use App\Http\Controllers\Dashboard\UserController;
 use App\Http\Controllers\Dashboard\WebsiteController;
 use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -57,6 +58,12 @@ Route::middleware(['auth', 'tenant'])->prefix('dashboard')->name('dashboard.')->
 
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+    Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
 });
 
 /*
