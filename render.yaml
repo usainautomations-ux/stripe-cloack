@@ -1,0 +1,72 @@
+# Render deployment, free tier.
+#
+# Budget note, because the two free tiers have different shapes and mixing them
+# up is how people get suspended mid-month:
+#
+#   Render  750 instance-hours per month. A month is ~730 hours, so ONE
+#           always-running service fits. A second one does not.
+#
+#   Neon    100 compute-hours per month, and compute sleeps after 5 minutes
+#           idle. This is why the health check below points at /up, which does
+#           not touch the database: a keep-warm ping that issued a query would
+#           hold Neon awake continuously and burn the month's allowance in
+#           about four days.
+#
+# The database is deliberately NOT declared here. Render's own free Postgres
+# expires; Neon's free tier does not, so the database lives there and is wired
+# in through DATABASE_URL below.
+
+services:
+  - type: web
+    name: usman-pay
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: saas
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: stderr
+
+      # Sessions and cache go to Postgres because the container filesystem is
+      # wiped on every restart and every deploy.
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+
+      # No worker process is affordable inside 750 instance-hours, so webhook
+      # jobs run inline. Safe here specifically because webhook_events has a
+      # unique index on stripe_event_id: when a slow response makes Stripe
+      # retry, the duplicate is rejected by the database rather than processed
+      # twice.
+      - key: QUEUE_CONNECTION
+        value: sync
+
+      - key: PLATFORM_NAME
+        value: usman.com
+
+      # Set these in the Render dashboard, not here — they are secrets.
+      - key: APP_KEY
+        sync: false
+      - key: SECRETS_MASTER_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: DB_CONNECTION
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false

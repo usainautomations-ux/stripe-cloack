@@ -1,0 +1,12 @@
+# Environment and secrets — never commit these.
+.env
+.env.*
+!.env.example
+
+# Local toolchain and database data live outside the repo, but guard anyway.
+/pgdata/
+*.log
+
+# OS noise
+Thumbs.db
+.DS_Store
