@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuthenticatePluginRequest;
+use App\Http\Middleware\BindTenantContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'plugin.auth' => AuthenticatePluginRequest::class,
+            // Deliberately declared after 'auth' wherever it is used — it reads
+            // $request->user(), so it must run second. Custom aliases outside
+            // Laravel's built-in priority list keep the relative order they are
+            // given in a route's middleware array, which is what makes this safe.
+            'tenant' => BindTenantContext::class,
         ]);
 
         // Stripe signs the exact bytes it sent. Any transformation of the body

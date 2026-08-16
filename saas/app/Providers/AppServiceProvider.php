@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Auth\TenantAwareUserProvider;
 use App\Services\Crypto\KeyProvider;
 use App\Services\Crypto\LocalKeyProvider;
 use App\Services\Crypto\SecretCipher;
 use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
@@ -38,6 +40,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // The auth guard's own user lookups (retrieveById on every request,
+        // retrieveByCredentials at login) run before any tenant is known —
+        // that is what authentication IS — so they need to read across
+        // tenants the same way the login form's manual lookup already does.
+        // Without this provider, RLS on the users table silently rejects
+        // every session's re-authentication after the first request. See
+        // TenantAwareUserProvider for the full explanation.
+        Auth::provider('tenant_aware_eloquent', function ($app, array $config) {
+            return new TenantAwareUserProvider($app['hash'], $config['model']);
+        });
+
         // Reject lazy loading outside production. An N+1 in a transaction report
         // is a performance bug; an unexpected lazy load inside a tenant-scoped
         // loop is a correctness question, and both are easier to catch here.

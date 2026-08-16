@@ -63,7 +63,10 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
+            // Not the stock 'eloquent' driver — see TenantAwareUserProvider.
+            // The guard's own lookups need to read across tenants, since they
+            // run before any tenant can be known.
+            'driver' => 'tenant_aware_eloquent',
             'model' => env('AUTH_MODEL', User::class),
         ],
 
