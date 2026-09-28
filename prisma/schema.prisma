@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  domain         String?
+  apiKeyHash     String    @unique
+  apiKeyPrefix   String    @unique
+  active         Boolean   @default(true)
+  webhookSecret  String?
+  branding       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  products       Product[]
+  customers      Customer[]
+  orders         Order[]
+  subscriptions  Subscription[]
+
+  @@index([apiKeyPrefix])
+}
+
+model Product {
+  id               String   @id @default(cuid())
+  tenantId         String
+  stripeProductId  String
+  stripePriceId    String
+  name             String
+  description      String?
+  amount           Int
+  currency         String   @default("usd")
+  billingType      BillingType @default(ONE_TIME)
+  interval         String?
+  active           Boolean  @default(true)
+  metadata         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders           Order[]
+
+  @@index([tenantId])
+  @@index([stripeProductId])
+}
+
+model Customer {
+  id               String    @id @default(cuid())
+  tenantId         String
+  stripeCustomerId String
+  email            String
+  name             String?
+  phone            String?
+  metadata         Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders           Order[]
+  subscriptions    Subscription[]
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, stripeCustomerId])
+  @@index([tenantId])
+}
+
+model Order {
+  id                       String      @id @default(cuid())
+  tenantId                 String
+  customerId               String?
+  productId                String?
+  stripeCheckoutSessionId  String      @unique
+  stripePaymentIntentId    String?
+  amount                   Int
+  currency                 String      @default("usd")
+  status                   OrderStatus @default(PENDING)
+  customerEmail            String?
+  description              String?
+  metadata                 Json?
+  successUrl               String?
+  cancelUrl                String?
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+
+  tenant                   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer                 Customer?   @relation(fields: [customerId], references: [id])
+  product                  Product?    @relation(fields: [productId], references: [id])
+
+  @@index([tenantId])
+  @@index([stripeCheckoutSessionId])
+  @@index([status])
+}
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  tenantId              String
+  customerId            String
+  stripeSubscriptionId  String             @unique
+  stripePriceId         String
+  status                SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  cancelAtPeriodEnd     Boolean            @default(false)
+  canceledAt            DateTime?
+  metadata              Json?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  tenant                Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer              Customer           @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId])
+  @@index([stripeSubscriptionId])
+}
+
+model WebhookEvent {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  type          String
+  processed     Boolean  @default(false)
+  payload       Json
+  error         String?
+  createdAt     DateTime @default(now())
+  processedAt   DateTime?
+
+  @@index([type])
+  @@index([processed])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  action     String
+  resource   String
+  resourceId String?
+  data       Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([action])
+}
+
+enum BillingType {
+  ONE_TIME
+  SUBSCRIPTION
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  EXPIRED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
+  PAUSED
+}

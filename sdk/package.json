@@ -1,0 +1,19 @@
+{
+  "name": "@stripe-gateway-hub/sdk",
+  "version": "1.0.0",
+  "description": "Client SDK for Stripe Gateway Hub — connect any website to your central payment hub",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --minify",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+  },
+  "keywords": ["stripe", "payments", "gateway", "sdk"],
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
