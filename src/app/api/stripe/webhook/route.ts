@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { constructWebhookEvent } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   const payload = await request.text()
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     create: {
       stripeEventId: event.id,
       type: event.type,
-      payload: event as unknown as Record<string, unknown>,
+      payload: event as unknown as Prisma.InputJsonValue,
       processed: false,
     },
     update: {},
@@ -196,7 +197,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
           status: mapSubStatus(stripeSub.status),
           currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
           currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
-          metadata: session.metadata,
+          metadata: session.metadata ?? undefined,
         },
         update: {
           status: mapSubStatus(stripeSub.status),

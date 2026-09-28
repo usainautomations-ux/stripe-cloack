@@ -5,12 +5,18 @@ const prisma = new PrismaClient()
 
 const API_KEY_PREFIX = 'sgw_'
 
+// Must match the secret the app uses in src/lib/auth.ts, or seeded keys won't validate
+if (!process.env.API_KEY_SECRET) {
+  throw new Error('API_KEY_SECRET is not set')
+}
+const API_KEY_SECRET: string = process.env.API_KEY_SECRET
+
 function generateApiKey() {
   const raw = crypto.randomBytes(32).toString('hex')
   const key = `${API_KEY_PREFIX}${raw}`
   const prefix = key.slice(0, 12)
   const hash = crypto
-    .createHmac('sha256', process.env.API_KEY_SECRET || 'dev-secret')
+    .createHmac('sha256', API_KEY_SECRET)
     .update(key)
     .digest('hex')
   return { key, prefix, hash }

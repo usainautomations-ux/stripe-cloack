@@ -13,8 +13,12 @@ export function generateApiKey(): { key: string; prefix: string; hash: string } 
 }
 
 export function hashApiKey(key: string): string {
+  const secret = process.env.API_KEY_SECRET
+  if (!secret) {
+    throw new Error('API_KEY_SECRET is not set')
+  }
   return crypto
-    .createHmac('sha256', process.env.API_KEY_SECRET || 'fallback-secret')
+    .createHmac('sha256', secret)
     .update(key)
     .digest('hex')
 }
